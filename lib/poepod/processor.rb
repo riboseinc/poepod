@@ -2,6 +2,7 @@
 
 require "yaml"
 require "tqdm"
+require "pathname"
 
 module Poepod
   class Processor
