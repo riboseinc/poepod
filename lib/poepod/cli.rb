@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "thor"
-require "poepod/processor"
+require_relative "processor"
 
 module Poepod
   class Cli < Thor

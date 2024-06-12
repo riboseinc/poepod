@@ -7,9 +7,10 @@ require "pathname"
 module Poepod
   class Processor
     EXCLUDE_DEFAULT = [
-      "node_modules/", ".git/", ".gitignore", ".DS_Store",
-      "*.jpg", "*.jpeg", "*.png", "*.svg", "*.gif",
-      "*.exe", "*.dll", "*.so", "*.bin", "*.o", "*.a"
+      /node_modules\//, /.git\//, /.gitignore$/, /.DS_Store$/,
+      /.jpg$/, /.jpeg$/, /.png/, /.svg$/, /.gif$/,
+      /.exe$/, /.dll$/, /.so$/, /.bin$/, /.o$/, /.a$/, /.gem$/, /.cap$/,
+      /.zip$/,
     ].freeze
 
     def initialize(config_file = nil)
@@ -35,7 +36,7 @@ module Poepod
 
     def gather_files(directory_path, exclude)
       exclude += @config["exclude"] if @config["exclude"]
-      exclude_pattern = Regexp.union(exclude.map { |ex| Regexp.escape(ex) })
+      exclude_pattern = Regexp.union(exclude.map { |ex| Regexp.new(ex) })
 
       Dir.glob("#{directory_path}/**/*").reject do |file_path|
         File.directory?(file_path) || file_path.match?(exclude_pattern)
