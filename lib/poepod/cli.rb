@@ -12,6 +12,12 @@ module Poepod
     def concat(directory, output_file = nil)
       dir_path = Pathname.new(directory)
 
+      # Check if the directory exists
+      unless dir_path.directory?
+        puts "Error: Directory '#{directory}' does not exist."
+        exit(1)
+      end
+
       dir_path = dir_path.expand_path unless dir_path.absolute?
 
       output_file ||= "#{dir_path.basename}.txt"
