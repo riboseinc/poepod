@@ -40,12 +40,24 @@ RSpec.describe Poepod::GemProcessor do
       allow(Git).to receive(:open).and_return(double(status: double(untracked: {}, changed: {})))
     end
 
-    it "processes the gem files, includes README files, and spec files" do
+    it "processes the gem files, includes README files, and spec files in sorted order" do
       success, output_file = processor.process
       expect(success).to be true
       expect(File.exist?(output_file)).to be true
 
       content = File.read(output_file)
+      expect(content).to include("# Wrapped Gem: test_gem")
+      expect(content).to include("## Gemspec: test_gem.gemspec")
+
+      file_order = content.scan(/--- START FILE: (.+) ---/).flatten
+      expected_order = [
+        "README.md",
+        "README.txt",
+        "lib/test_gem.rb",
+        "spec/test_gem_spec.rb"
+      ]
+      expect(file_order).to eq(expected_order)
+
       expect(content).to include("# Wrapped Gem: test_gem")
       expect(content).to include("## Gemspec: test_gem.gemspec")
       expect(content).to include("--- START FILE: lib/test_gem.rb ---")

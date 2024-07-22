@@ -11,17 +11,20 @@ module Poepod
     option :exclude, type: :array, default: Poepod::FileProcessor::EXCLUDE_DEFAULT, desc: "List of patterns to exclude"
     option :config, type: :string, desc: "Path to configuration file"
     option :include_binary, type: :boolean, default: false, desc: "Include binary files (encoded in MIME format)"
+    option :include_dot_files, type: :boolean, default: false, desc: "Include dot files"
+    option :output_file, type: :string, desc: "Output path"
 
-    def concat(*files, output_file: nil)
+    def concat(*files)
       if files.empty?
         puts "Error: No files specified."
         exit(1)
       end
 
-      output_file ||= default_output_file(files.first)
+      output_file = options[:output_file] || default_output_file(files.first)
       output_path = Pathname.new(output_file).expand_path
 
-      processor = Poepod::FileProcessor.new(files, output_path, options[:config], options[:include_binary])
+      processor = Poepod::FileProcessor.new(files, output_path, options[:config], options[:include_binary],
+                                            options[:include_dot_files])
       total_files, copied_files = processor.process
 
       puts "-> #{total_files} files detected."
