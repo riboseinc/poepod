@@ -9,4 +9,4 @@ on:
 
 jobs:
   rake:
-    uses: metanorma/ci/.github/workflows/graphviz-rake.yml@main
+    uses: metanorma/ci/.github/workflows/generic-rake.yml@main
