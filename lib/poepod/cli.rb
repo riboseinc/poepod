@@ -26,7 +26,11 @@ module Poepod
                               desc: "Include unstaged files from lib, spec, and test directories"
 
     def wrap(gemspec_path)
-      processor = Poepod::GemProcessor.new(gemspec_path, nil, options[:include_unstaged])
+      processor = Poepod::GemProcessor.new(
+        gemspec_path,
+        nil,
+        include_unstaged: options[:include_unstaged]
+      )
       success, result, unstaged_files = processor.process
       handle_wrap_result(success, result, unstaged_files)
     end
