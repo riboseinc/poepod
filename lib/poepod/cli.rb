@@ -8,31 +8,50 @@ require_relative "gem_processor"
 module Poepod
   # Command-line interface for Poepod
   class Cli < Thor
+    # Define shared options
+    def self.shared_options
+      option :exclude, type: :array, default: Poepod::FileProcessor::EXCLUDE_DEFAULT,
+                       desc: "List of patterns to exclude"
+      option :config, type: :string, desc: "Path to configuration file"
+      option :include_binary, type: :boolean, default: false, desc: "Include binary files (encoded in MIME format)"
+      option :include_dot_files, type: :boolean, default: false, desc: "Include dot files"
+      option :output_file, type: :string, desc: "Output path"
+      option :base_dir, type: :string, desc: "Base directory for relative file paths in output"
+    end
+
     desc "concat FILES [OUTPUT_FILE]", "Concatenate specified files into one text file"
-    option :exclude, type: :array, default: Poepod::FileProcessor::EXCLUDE_DEFAULT, desc: "List of patterns to exclude"
-    option :config, type: :string, desc: "Path to configuration file"
-    option :include_binary, type: :boolean, default: false, desc: "Include binary files (encoded in MIME format)"
-    option :include_dot_files, type: :boolean, default: false, desc: "Include dot files"
-    option :output_file, type: :string, desc: "Output path"
+    shared_options
 
     def concat(*files)
       check_files(files)
       output_file = determine_output_file(files)
-      process_files(files, output_file)
+      base_dir = options[:base_dir] || Dir.pwd
+      process_files(files, output_file, base_dir)
     end
 
     desc "wrap GEMSPEC_PATH", "Wrap a gem based on its gemspec file"
+    shared_options
     option :include_unstaged, type: :boolean, default: false,
                               desc: "Include unstaged files from lib, spec, and test directories"
 
     def wrap(gemspec_path)
+      base_dir = options[:base_dir] || File.dirname(gemspec_path)
       processor = Poepod::GemProcessor.new(
         gemspec_path,
-        nil,
-        include_unstaged: options[:include_unstaged]
+        include_unstaged: options[:include_unstaged],
+        exclude: options[:exclude],
+        include_binary: options[:include_binary],
+        include_dot_files: options[:include_dot_files],
+        base_dir: base_dir,
+        config_file: options[:config]
       )
       success, result, unstaged_files = processor.process
-      handle_wrap_result(success, result, unstaged_files)
+      if success
+        handle_wrap_result(success, result, unstaged_files)
+      else
+        puts result
+        exit(1)
+      end
     end
 
     def self.exit_on_failure?
@@ -52,14 +71,16 @@ module Poepod
       options[:output_file] || default_output_file(files.first)
     end
 
-    def process_files(files, output_file)
+    def process_files(files, output_file, base_dir)
       output_path = Pathname.new(output_file).expand_path
       processor = Poepod::FileProcessor.new(
         files,
         output_path,
         config_file: options[:config],
         include_binary: options[:include_binary],
-        include_dot_files: options[:include_dot_files]
+        include_dot_files: options[:include_dot_files],
+        exclude: options[:exclude],
+        base_dir: base_dir
       )
       total_files, copied_files = processor.process
       print_result(total_files, copied_files, output_path)

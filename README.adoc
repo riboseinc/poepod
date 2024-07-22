@@ -42,6 +42,24 @@ Commands:
   poepod wrap GEMSPEC_PATH           # Wrap a gem based on its gemspec file
 ----
 
+=== Global options
+
+All options can be used for both `wrap` and `concat` commands:
+
+* `--exclude`: List of patterns to exclude (default: `["node_modules/", ".git/", ".gitignore$", ".DS_Store$", "^\\..+"]`)
+* `--config`: Path to configuration file
+* `--include-binary`: Include binary files (encoded in MIME format)
+* `--include-dot-files`: Include dot files
+* `--output-file`: Output path
+* `--base-dir`: Base directory for relative file paths in output
+* `--include-unstaged`: Include unstaged files from `lib`, `spec`, and `test` directories (for `wrap` command only)
+
+[source,shell]
+----
+$ poepod concat FILES [OUTPUT_FILE] --exclude PATTERNS --config PATH --include-binary --include-dot-files --output-file PATH --base-dir PATH
+$ poepod wrap GEMSPEC_PATH --exclude PATTERNS --config PATH --include-binary --include-dot-files --output-file PATH --base-dir PATH --include-unstaged
+----
+
 === Concatenating files
 
 The `concat` command allows you to combine multiple files into a single text
@@ -54,7 +72,6 @@ coding assistants.
 By default, it excludes binary files, dot files, and certain patterns like
 `node_modules/` and `.git/`.
 
-
 [source,shell]
 ----
 $ poepod concat path/to/files/* output.txt
@@ -62,7 +79,6 @@ $ poepod concat path/to/files/* output.txt
 
 This will concatenate all non-binary, non-dot files from the specified path into
 `output.txt`.
-
 
 ==== Including dot files
 
@@ -74,7 +90,6 @@ To include them, use the `--include-dot-files` option:
 ----
 $ poepod concat path/to/files/* output.txt --include-dot-files
 ----
-
 
 ==== Including binary files
 
@@ -92,7 +107,6 @@ $ poepod concat path/to/files/* output.txt --include-binary
 This can be useful when you need to include binary assets or compiled files in
 your analysis.
 
-
 ==== Excluding patterns
 
 You can exclude certain patterns using the `--exclude` option:
@@ -104,7 +118,6 @@ $ poepod concat path/to/files/* output.txt --exclude node_modules .git build tes
 
 This is helpful when you want to focus on specific parts of your codebase,
 excluding irrelevant or large directories.
-
 
 === Wrapping a gem
 

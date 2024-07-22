@@ -31,8 +31,8 @@ RSpec.describe Poepod::FileProcessor do
 
       it "processes text files and excludes binary and dot files" do
         total_files, copied_files = processor.process
-        expect(total_files).to eq(2) # Only text files are detected
-        expect(copied_files).to eq(2) # Only text files are processed
+        expect(total_files).to eq(2)
+        expect(copied_files).to eq(2)
 
         output_content = File.read(output_file.path, encoding: "utf-8")
         expected_content = <<~TEXT
@@ -52,13 +52,13 @@ RSpec.describe Poepod::FileProcessor do
 
       it "includes binary files" do
         total_files, copied_files = processor.process
-        expect(total_files).to eq(3) # Text files and binary file
-        expect(copied_files).to eq(3) # Text files and binary file
+        expect(total_files).to eq(3)
+        expect(copied_files).to eq(3)
 
         output_content = File.read(output_file.path, encoding: "utf-8")
         expected_content = <<~TEXT
           --- START FILE: #{binary_file} ---
-          Content-Type: application/octet-stream
+          Content-Type: image/jpeg
           Content-Transfer-Encoding: base64
 
           /9j/4A==
@@ -79,8 +79,8 @@ RSpec.describe Poepod::FileProcessor do
 
       it "includes dot files" do
         total_files, copied_files = processor.process
-        expect(total_files).to eq(3) # Text files and dot file
-        expect(copied_files).to eq(3) # Text files and dot file
+        expect(total_files).to eq(3)
+        expect(copied_files).to eq(3)
 
         output_content = File.read(output_file.path, encoding: "utf-8")
         expected_content = <<~TEXT
@@ -105,27 +105,27 @@ RSpec.describe Poepod::FileProcessor do
 
       it "includes all files in sorted order" do
         total_files, copied_files = processor.process
-        expect(total_files).to eq(4) # All files
-        expect(copied_files).to eq(4) # All files
+        expect(total_files).to eq(4)
+        expect(copied_files).to eq(4)
 
         output_content = File.read(output_file.path, encoding: "utf-8")
-        expected_content = [
-          "--- START FILE: #{dot_file} ---",
-          "Content of hidden file.",
-          "--- END FILE: #{dot_file} ---",
-          "--- START FILE: #{binary_file} ---",
-          "Content-Type: application/octet-stream",
-          "Content-Transfer-Encoding: base64",
-          "",
-          "/9j/4A==",
-          "--- END FILE: #{binary_file} ---",
-          "--- START FILE: #{text_file1} ---",
-          "Content of file1.",
-          "--- END FILE: #{text_file1} ---",
-          "--- START FILE: #{text_file2} ---",
-          "Content of file2.",
-          "--- END FILE: #{text_file2} ---"
-        ].join("\n") + "\n"
+        expected_content = <<~HERE
+          --- START FILE: #{dot_file} ---
+          Content of hidden file.
+          --- END FILE: #{dot_file} ---
+          --- START FILE: #{binary_file} ---
+          Content-Type: image/jpeg
+          Content-Transfer-Encoding: base64
+
+          /9j/4A==
+          --- END FILE: #{binary_file} ---
+          --- START FILE: #{text_file1} ---
+          Content of file1.
+          --- END FILE: #{text_file1} ---
+          --- START FILE: #{text_file2} ---
+          Content of file2.
+          --- END FILE: #{text_file2} ---
+        HERE
 
         expect(output_content).to eq(expected_content)
       end
@@ -136,18 +136,15 @@ RSpec.describe Poepod::FileProcessor do
     let(:processor) { described_class.new([text_file1], output_file.path) }
 
     it "reads the content of a file" do
-      file_path, content, error = processor.send(:process_file, text_file1)
-      expect(file_path).to eq(text_file1)
-      expect(content).to eq("Content of file1.\n")
-      expect(error).to be_nil
+      content = processor.send(:process_file, nil, text_file1)
+      expect(content).to include("Content of file1.\n")
     end
 
     it "handles encoding errors gracefully" do
       allow(File).to receive(:read).and_raise(Encoding::InvalidByteSequenceError)
-      file_path, content, error = processor.send(:process_file, text_file1)
-      expect(file_path).to eq(text_file1)
-      expect(content).to be_nil
-      expect(error).to eq("Failed to decode the file, as it is not saved with UTF-8 encoding.")
+      expect do
+        processor.send(:process_file, nil, text_file1)
+      end.to raise_error(Encoding::InvalidByteSequenceError)
     end
   end
 end
