@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # spec/poepod/file_processor_spec.rb
 require "spec_helper"
 require "poepod/file_processor"

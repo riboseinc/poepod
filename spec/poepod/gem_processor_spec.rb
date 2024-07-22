@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # spec/poepod/gem_processor_spec.rb
 require "spec_helper"
 require "poepod/gem_processor"
@@ -103,7 +105,7 @@ RSpec.describe Poepod::GemProcessor do
             "spec/test_gem_spec.rb" => "RSpec.describe TestGem do\nend",
             "README.md" => "# Test Gem\n\nThis is a test gem.",
             "README.txt" => "Test Gem\n\nThis is a test gem in plain text.",
-            "lib/unstaged_file.rb" => "Unstaged content",
+            "lib/unstaged_file.rb" => "Unstaged content"
           }
 
           # Mock File.read
