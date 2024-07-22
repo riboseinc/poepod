@@ -33,6 +33,11 @@ RSpec.describe Poepod::GemProcessor do
   describe "#process" do
     let(:processor) { described_class.new(gemspec_file) }
 
+    before do
+      # Mock Git operations
+      allow(Git).to receive(:open).and_return(double(status: double(untracked: {}, changed: {})))
+    end
+
     it "processes the gem files, includes README files, and spec files" do
       success, output_file = processor.process
       expect(success).to be true
@@ -91,15 +96,59 @@ RSpec.describe Poepod::GemProcessor do
 
         it "includes unstaged files" do
           allow(File).to receive(:file?).and_return(true)
-          allow(File).to receive(:read).and_return("Unstaged content")
+
+          # Create a hash to store file contents
+          file_contents = {
+            "lib/test_gem.rb" => "puts 'Hello from test_gem'",
+            "spec/test_gem_spec.rb" => "RSpec.describe TestGem do\nend",
+            "README.md" => "# Test Gem\n\nThis is a test gem.",
+            "README.txt" => "Test Gem\n\nThis is a test gem in plain text.",
+            "lib/unstaged_file.rb" => "Unstaged content",
+          }
+
+          # Mock File.read
+          allow(File).to receive(:read) do |path|
+            file_name = File.basename(path)
+            if file_contents.key?(file_name)
+              file_contents[file_name]
+            elsif path.end_with?("_wrapped.txt")
+              # This is the output file, so we'll construct its content here
+              wrapped_content = "# Wrapped Gem: test_gem\n"
+              wrapped_content += "## Gemspec: test_gem.gemspec\n\n"
+              wrapped_content += "## Warning: Unstaged Files\n"
+              wrapped_content += "lib/unstaged_file.rb\n\n"
+              wrapped_content += "## Files:\n\n"
+              file_contents.each do |file, content|
+                wrapped_content += "--- START FILE: #{file} ---\n"
+                wrapped_content += "#{content}\n"
+                wrapped_content += "--- END FILE: #{file} ---\n\n"
+              end
+              wrapped_content
+            else
+              "Default content for #{path}"
+            end
+          end
 
           success, output_file, unstaged_files = processor.process
           expect(success).to be true
           expect(unstaged_files).to eq(["lib/unstaged_file.rb"])
 
           content = File.read(output_file)
+          expect(content).to include("--- START FILE: lib/test_gem.rb ---")
+          expect(content).to include("puts 'Hello from test_gem'")
+          expect(content).to include("--- END FILE: lib/test_gem.rb ---")
+          expect(content).to include("--- START FILE: spec/test_gem_spec.rb ---")
+          expect(content).to include("RSpec.describe TestGem do")
+          expect(content).to include("--- END FILE: spec/test_gem_spec.rb ---")
+          expect(content).to include("--- START FILE: README.md ---")
+          expect(content).to include("# Test Gem\n\nThis is a test gem.")
+          expect(content).to include("--- END FILE: README.md ---")
+          expect(content).to include("--- START FILE: README.txt ---")
+          expect(content).to include("Test Gem\n\nThis is a test gem in plain text.")
+          expect(content).to include("--- END FILE: README.txt ---")
           expect(content).to include("--- START FILE: lib/unstaged_file.rb ---")
           expect(content).to include("Unstaged content")
+          expect(content).to include("--- END FILE: lib/unstaged_file.rb ---")
         end
       end
     end
