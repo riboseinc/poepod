@@ -10,37 +10,50 @@ RSpec.describe Poepod::Cli do
     let(:temp_dir) { Dir.mktmpdir }
     let(:text_file) { File.join(temp_dir, "text_file.txt") }
     let(:binary_file) { File.join(temp_dir, "binary_file.bin") }
+    let(:dot_file) { File.join(temp_dir, ".hidden_file") }
 
     before do
       File.write(text_file, "Hello, World!")
       File.write(binary_file, [0xFF, 0xD8, 0xFF, 0xE0].pack("C*"))
+      File.write(dot_file, "Hidden content")
     end
 
     after do
       FileUtils.remove_entry(temp_dir)
     end
 
-    it "concatenates text files" do
-      output_file = File.join(temp_dir, "output.txt")
-      expect { cli.concat(text_file, output_file: output_file) }.to output(/1 files detected/).to_stdout
-      expect(File.exist?(output_file)).to be true
-      expect(File.read(output_file)).to include("Hello, World!")
-    end
-
-    it "excludes binary files by default" do
+    it "concatenates text files and excludes binary and dot files by default" do
       output_file = File.join(temp_dir, "output.txt")
       expect do
-        cli.concat(text_file, binary_file,
-                   output_file: output_file)
-      end.to output(/-> 2 files detected\.\n=> 1 files have been concatenated into.*\.txt/).to_stdout
+        cli.invoke(:concat, [File.join(temp_dir, "*")],
+                   { output_file: output_file })
+      end.to output(/2 files detected\.\n.*1 files have been concatenated/).to_stdout
+      expect(File.exist?(output_file)).to be true
+      content = File.read(output_file)
+      expect(content).to include("Hello, World!")
+      expect(content).not_to include("Hidden content")
     end
 
     it "includes binary files when specified" do
       output_file = File.join(temp_dir, "output.txt")
       expect do
-        cli.invoke(:concat, [text_file, binary_file], output_file: output_file,
-                                                      include_binary: true)
-      end.to output(/-> 2 files detected\.\n=> 2 files have been concatenated into.*\.txt/).to_stdout
+        cli.invoke(:concat, [File.join(temp_dir, "*")], { output_file: output_file, include_binary: true })
+      end.to output(/2 files detected\.\n.*2 files have been concatenated/).to_stdout
+      expect(File.exist?(output_file)).to be true
+      content = File.read(output_file)
+      expect(content).to include("Hello, World!")
+      expect(content).to include("Content-Type: application/octet-stream")
+    end
+
+    it "includes dot files when specified" do
+      output_file = File.join(temp_dir, "output.txt")
+      expect do
+        cli.invoke(:concat, [File.join(temp_dir, "*")], { output_file: output_file, include_dot_files: true })
+      end.to output(/3 files detected\.\n.*2 files have been concatenated/).to_stdout
+      expect(File.exist?(output_file)).to be true
+      content = File.read(output_file)
+      expect(content).to include("Hello, World!")
+      expect(content).to include("Hidden content")
     end
   end
 

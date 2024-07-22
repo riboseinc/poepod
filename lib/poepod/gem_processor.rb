@@ -34,7 +34,7 @@ module Poepod
 
         if unstaged_files.any?
           file.puts "\n## Warning: Unstaged Files"
-          file.puts unstaged_files.join("\n")
+          file.puts unstaged_files.sort.join("\n")
           file.puts "\nThese files are not included in the wrap unless --include-unstaged option is used."
         end
 
@@ -43,7 +43,7 @@ module Poepod
         files_to_include = (spec.files + spec.test_files + find_readme_files).uniq
         files_to_include += unstaged_files if @include_unstaged
 
-        files_to_include.uniq.each do |relative_path|
+        files_to_include.sort.uniq.each do |relative_path|
           full_path = File.join(File.dirname(@gemspec_path), relative_path)
           next unless File.file?(full_path)
 

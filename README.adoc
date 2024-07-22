@@ -45,16 +45,53 @@ Commands:
 === Concatenating files
 
 The `concat` command allows you to combine multiple files into a single text
-file. This is particularly useful when you want to review or analyze code from
+file.
+
+This is particularly useful when you want to review or analyze code from
 multiple files in one place, or when preparing code submissions for AI-powered
 coding assistants.
+
+By default, it excludes binary files, dot files, and certain patterns like
+`node_modules/` and `.git/`.
+
 
 [source,shell]
 ----
 $ poepod concat path/to/files/* output.txt
 ----
 
-This will concatenate all files from the specified path into `output.txt`.
+This will concatenate all non-binary, non-dot files from the specified path into
+`output.txt`.
+
+
+==== Including dot files
+
+By default, dot files (hidden files starting with a dot) are excluded.
+
+To include them, use the `--include-dot-files` option:
+
+[source,shell]
+----
+$ poepod concat path/to/files/* output.txt --include-dot-files
+----
+
+
+==== Including binary files
+
+By default, binary files are excluded to keep the output focused on readable
+code.
+
+To include binary files (encoded in MIME format), use the `--include-binary`
+option:
+
+[source,shell]
+----
+$ poepod concat path/to/files/* output.txt --include-binary
+----
+
+This can be useful when you need to include binary assets or compiled files in
+your analysis.
+
 
 ==== Excluding patterns
 
@@ -68,19 +105,6 @@ $ poepod concat path/to/files/* output.txt --exclude node_modules .git build tes
 This is helpful when you want to focus on specific parts of your codebase,
 excluding irrelevant or large directories.
 
-==== Including binary files
-
-By default, binary files are excluded to keep the output focused on readable
-code. However, you can include binary files (encoded in MIME format) using the
-`--include-binary` option:
-
-[source,shell]
-----
-$ poepod concat path/to/files/* output.txt --include-binary
-----
-
-This can be useful when you need to include binary assets or compiled files in
-your analysis.
 
 === Wrapping a gem
 
