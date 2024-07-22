@@ -85,6 +85,7 @@ RSpec.describe Poepod::GemProcessor do
     end
 
     context "with unstaged files" do
+      let(:processor) { described_class.new(gemspec_file, nil, include_unstaged: true) }
       let(:mock_git) { instance_double(Git::Base) }
       let(:mock_status) { instance_double(Git::Status) }
 
@@ -106,7 +107,7 @@ RSpec.describe Poepod::GemProcessor do
       end
 
       context "with include_unstaged option" do
-        let(:processor) { described_class.new(gemspec_file, nil, true) }
+        let(:processor) { described_class.new(gemspec_file, nil, include_unstaged: true) }
 
         it "includes unstaged files" do
           allow(File).to receive(:file?).and_return(true)

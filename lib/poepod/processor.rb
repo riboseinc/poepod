@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-# lib/poepod/processor.rb
 module Poepod
+  # Base class for file processors
   class Processor
     def initialize(config_file = nil)
       @config = load_config(config_file)
