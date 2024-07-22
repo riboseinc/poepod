@@ -1,7 +1,10 @@
 = Poepod
 
-Poepod is a Ruby gem that provides functionality to concatenate code files from
-a directory into one text file for analysis by Poe.
+Poepod is a Ruby gem that streamlines the process of preparing code for analysis
+by Poe. It offers two main features: concatenating multiple files into a single
+text file, and wrapping gem contents including unstaged files. These features
+are particularly useful for developers who want to quickly gather code for
+review, analysis, or submission to AI-powered coding assistants.
 
 == Installation
 
@@ -28,49 +31,102 @@ $ gem install poepod
 
 == Usage
 
-After installation, you can use the `poepod` command line tool to concatenate
-code files:
+After installation, you can use the `poepod` command line tool:
 
 [source,shell]
 ----
 $ poepod help
 Commands:
-  poepod concat DIRECTORY OUTPUT_FILE  # Concatenate code from a directory into one text file
-  poepod help [COMMAND]                # Describe available commands or one specific command
-
-$ poepod help concat
-Usage:
-  poepod concat DIRECTORY OUTPUT_FILE
-
-Options:
-  [--exclude=one two three]  # List of patterns to exclude
-                             # Default: "node_modules/" ".git/" "build" "test" ".gitignore" ".DS_Store" "*.jpg" "*.jpeg" "*.png" "*.svg" "*.gif" "*.exe" "*.dll" "*.so" "*.bin" "*.o" "*.a"
-  [--config=CONFIG]          # Path to configuration file
-
-Concatenate code from a directory into one text file
+  poepod concat FILES [OUTPUT_FILE]  # Concatenate specified files into one text file
+  poepod help [COMMAND]              # Describe available commands or one specific command
+  poepod wrap GEMSPEC_PATH           # Wrap a gem based on its gemspec file
 ----
 
-For example:
+=== Concatenating files
+
+The `concat` command allows you to combine multiple files into a single text
+file. This is particularly useful when you want to review or analyze code from
+multiple files in one place, or when preparing code submissions for AI-powered
+coding assistants.
 
 [source,shell]
 ----
-$ poepod concat my_project
-# => concatenated into my_project.txt
+$ poepod concat path/to/files/* output.txt
 ----
 
-This will concatenate all code files from the specified directory into `output.txt`.
+This will concatenate all files from the specified path into `output.txt`.
 
-You can also exclude certain directories or files by using the `--exclude` option:
+==== Excluding patterns
+
+You can exclude certain patterns using the `--exclude` option:
 
 [source,shell]
 ----
-$ poepod concat my_project output.txt --exclude node_modules .git build test .gitignore .DS_Store .jpg .png .svg
+$ poepod concat path/to/files/* output.txt --exclude node_modules .git build test
 ----
+
+This is helpful when you want to focus on specific parts of your codebase,
+excluding irrelevant or large directories.
+
+==== Including binary files
+
+By default, binary files are excluded to keep the output focused on readable
+code. However, you can include binary files (encoded in MIME format) using the
+`--include-binary` option:
+
+[source,shell]
+----
+$ poepod concat path/to/files/* output.txt --include-binary
+----
+
+This can be useful when you need to include binary assets or compiled files in
+your analysis.
+
+=== Wrapping a gem
+
+The `wrap` command creates a comprehensive snapshot of your gem, including all
+files specified in the gemspec and README files. This is particularly useful for
+gem developers who want to review their entire gem contents or prepare it for
+submission to code review tools.
+
+[source,shell]
+----
+$ poepod wrap path/to/your_gem.gemspec
+----
+
+This will create a file named `your_gem_wrapped.txt` containing all the files
+specified in the gemspec, including README files.
+
+==== Handling unstaged files
+
+By default, unstaged files in the `lib/`, `spec/`, and `test/` directories are
+not included in the wrap, but they will be listed as a warning. This default
+behavior ensures that the wrapped content matches what's currently tracked in
+your version control system.
+
+However, there are cases where including unstaged files can be beneficial:
+
+. When you're actively developing and want to include recent changes that
+haven't been committed yet.
+
+. When you're seeking feedback on work-in-progress code.
+
+. When you want to ensure you're not missing any important files in your commit.
+
+To include these unstaged files in the wrap:
+
+[source,shell]
+----
+$ poepod wrap path/to/your_gem.gemspec --include-unstaged
+----
+
+This option allows you to capture a true snapshot of your gem's current state,
+including any work in progress.
 
 == Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run
-`rake test` to run the tests. You can also run `bin/console` for an interactive
+`rake spec` to run the tests. You can also run `bin/console` for an interactive
 prompt that will allow you to experiment.
 
 To install this gem onto your local machine, run `bundle exec rake install`. To
@@ -82,3 +138,4 @@ https://rubygems.org.
 == Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/riboseinc/poepod.
+Please adhere to the link:CODE_OF_CONDUCT.md[code of conduct].
