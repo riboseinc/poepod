@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # lib/poepod/gem_processor.rb
 require_relative "processor"
 require "rubygems/specification"
@@ -18,7 +20,7 @@ module Poepod
 
       begin
         spec = Gem::Specification.load(@gemspec_path)
-      rescue => e
+      rescue StandardError => e
         return [false, "Error loading gemspec: #{e.message}"]
       end
 
@@ -43,11 +45,11 @@ module Poepod
 
         files_to_include.uniq.each do |relative_path|
           full_path = File.join(File.dirname(@gemspec_path), relative_path)
-          if File.file?(full_path)
-            file.puts "--- START FILE: #{relative_path} ---"
-            file.puts File.read(full_path)
-            file.puts "--- END FILE: #{relative_path} ---\n\n"
-          end
+          next unless File.file?(full_path)
+
+          file.puts "--- START FILE: #{relative_path} ---"
+          file.puts File.read(full_path)
+          file.puts "--- END FILE: #{relative_path} ---\n\n"
         end
       end
 
@@ -58,7 +60,7 @@ module Poepod
 
     def find_readme_files
       Dir.glob(File.join(File.dirname(@gemspec_path), "README*"))
-        .map { |path| Pathname.new(path).relative_path_from(Pathname.new(File.dirname(@gemspec_path))).to_s }
+         .map { |path| Pathname.new(path).relative_path_from(Pathname.new(File.dirname(@gemspec_path))).to_s }
     end
 
     def check_unstaged_files

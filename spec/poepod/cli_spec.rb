@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "spec_helper"
 require "poepod/cli"
 
@@ -27,12 +29,18 @@ RSpec.describe Poepod::Cli do
 
     it "excludes binary files by default" do
       output_file = File.join(temp_dir, "output.txt")
-      expect { cli.concat(text_file, binary_file, output_file: output_file) }.to output(/-> 2 files detected\.\n=> 1 files have been concatenated into.*\.txt/).to_stdout
+      expect do
+        cli.concat(text_file, binary_file,
+                   output_file: output_file)
+      end.to output(/-> 2 files detected\.\n=> 1 files have been concatenated into.*\.txt/).to_stdout
     end
 
     it "includes binary files when specified" do
       output_file = File.join(temp_dir, "output.txt")
-      expect { cli.invoke(:concat, [text_file, binary_file], output_file: output_file, include_binary: true) }.to output(/-> 2 files detected\.\n=> 2 files have been concatenated into.*\.txt/).to_stdout
+      expect do
+        cli.invoke(:concat, [text_file, binary_file], output_file: output_file,
+                                                      include_binary: true)
+      end.to output(/-> 2 files detected\.\n=> 2 files have been concatenated into.*\.txt/).to_stdout
     end
   end
 
@@ -74,7 +82,9 @@ RSpec.describe Poepod::Cli do
     end
 
     it "handles non-existent gemspec" do
-      expect { cli.wrap("non_existent.gemspec") }.to output(/Error: The specified gemspec file/).to_stdout.and raise_error(SystemExit)
+      expect do
+        cli.wrap("non_existent.gemspec")
+      end.to output(/Error: The specified gemspec file/).to_stdout.and raise_error(SystemExit)
     end
   end
 end

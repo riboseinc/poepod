@@ -30,11 +30,11 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
   spec.test_files = `git ls-files -- spec/*`.split("\n")
 
+  spec.add_runtime_dependency "git", "~> 1.11"
+  spec.add_runtime_dependency "mime-types", "~> 3.3"
   spec.add_runtime_dependency "parallel", "~> 1.20"
   spec.add_runtime_dependency "thor", "~> 1.0"
   spec.add_runtime_dependency "tqdm"
-  spec.add_runtime_dependency "mime-types", "~> 3.3"
-  spec.add_runtime_dependency "git", "~> 1.11"
 
   spec.add_development_dependency "rake"
   spec.add_development_dependency "rspec"

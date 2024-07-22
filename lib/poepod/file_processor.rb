@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "processor"
 require "yaml"
 require "tqdm"
@@ -9,7 +11,7 @@ require "mime/types"
 module Poepod
   class FileProcessor < Processor
     EXCLUDE_DEFAULT = [
-      /node_modules\//, /.git\//, /.gitignore$/, /.DS_Store$/,
+      %r{node_modules/}, %r{.git/}, /.gitignore$/, /.DS_Store$/
     ].freeze
 
     def initialize(files, output_file, config_file = nil, include_binary = false)
@@ -27,17 +29,17 @@ module Poepod
       File.open(@output_file, "w", encoding: "utf-8") do |output|
         @files.each do |file|
           Dir.glob(file).each do |matched_file|
-            if File.file?(matched_file)
-              total_files += 1
-              file_path, content, error = process_file(matched_file)
-              if content
-                output.puts "--- START FILE: #{file_path} ---"
-                output.puts content
-                output.puts "--- END FILE: #{file_path} ---"
-                copied_files += 1
-              elsif error
-                output.puts "#{file_path}\n#{error}"
-              end
+            next unless File.file?(matched_file)
+
+            total_files += 1
+            file_path, content, error = process_file(matched_file)
+            if content
+              output.puts "--- START FILE: #{file_path} ---"
+              output.puts content
+              output.puts "--- END FILE: #{file_path} ---"
+              copied_files += 1
+            elsif error
+              output.puts "#{file_path}\n#{error}"
             end
           end
         end

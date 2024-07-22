@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # lib/poepod/cli.rb
 require "thor"
 require_relative "file_processor"
@@ -27,7 +29,8 @@ module Poepod
     end
 
     desc "wrap GEMSPEC_PATH", "Wrap a gem based on its gemspec file"
-    option :include_unstaged, type: :boolean, default: false, desc: "Include unstaged files from lib, spec, and test directories"
+    option :include_unstaged, type: :boolean, default: false,
+                              desc: "Include unstaged files from lib, spec, and test directories"
 
     def wrap(gemspec_path)
       processor = Poepod::GemProcessor.new(gemspec_path, nil, options[:include_unstaged])
