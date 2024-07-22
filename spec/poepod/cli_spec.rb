@@ -52,6 +52,9 @@ RSpec.describe Poepod::Cli do
 
       FileUtils.mkdir_p(File.join(temp_dir, "lib"))
       File.write(File.join(temp_dir, "lib/test_gem.rb"), "puts 'Hello from test_gem'")
+
+      # Mock Git operations
+      allow(Git).to receive(:open).and_return(double(status: double(untracked: {}, changed: {})))
     end
 
     after do
