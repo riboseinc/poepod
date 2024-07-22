@@ -25,9 +25,8 @@ RSpec.describe Poepod::Cli do
     it "concatenates text files and excludes binary and dot files by default" do
       output_file = File.join(temp_dir, "output.txt")
       expect do
-        cli.invoke(:concat, [File.join(temp_dir, "*")],
-                   { output_file: output_file })
-      end.to output(/2 files detected\.\n.*1 files have been concatenated/).to_stdout
+        cli.invoke(:concat, [File.join(temp_dir, "*")], { output_file: output_file })
+      end.to output(/1 files detected\.\n.*1 files have been concatenated/).to_stdout
       expect(File.exist?(output_file)).to be true
       content = File.read(output_file)
       expect(content).to include("Hello, World!")
@@ -49,7 +48,7 @@ RSpec.describe Poepod::Cli do
       output_file = File.join(temp_dir, "output.txt")
       expect do
         cli.invoke(:concat, [File.join(temp_dir, "*")], { output_file: output_file, include_dot_files: true })
-      end.to output(/3 files detected\.\n.*2 files have been concatenated/).to_stdout
+      end.to output(/2 files detected\.\n.*2 files have been concatenated/).to_stdout
       expect(File.exist?(output_file)).to be true
       content = File.read(output_file)
       expect(content).to include("Hello, World!")

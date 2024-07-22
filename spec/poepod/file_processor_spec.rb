@@ -31,8 +31,8 @@ RSpec.describe Poepod::FileProcessor do
 
       it "processes text files and excludes binary and dot files" do
         total_files, copied_files = processor.process
-        expect(total_files).to eq(3) # Only text files
-        expect(copied_files).to eq(2) # Only text files
+        expect(total_files).to eq(2) # Only text files are detected
+        expect(copied_files).to eq(2) # Only text files are processed
 
         output_content = File.read(output_file.path, encoding: "utf-8")
         expected_content = <<~TEXT
@@ -48,7 +48,7 @@ RSpec.describe Poepod::FileProcessor do
     end
 
     context "with include_binary option" do
-      let(:processor) { described_class.new([File.join(temp_dir, "*")], output_file.path, nil, true) }
+      let(:processor) { described_class.new([File.join(temp_dir, "*")], output_file.path, include_binary: true) }
 
       it "includes binary files" do
         total_files, copied_files = processor.process
@@ -75,11 +75,11 @@ RSpec.describe Poepod::FileProcessor do
     end
 
     context "with include_dot_files option" do
-      let(:processor) { described_class.new([File.join(temp_dir, "*")], output_file.path, nil, false, true) }
+      let(:processor) { described_class.new([File.join(temp_dir, "*")], output_file.path, include_dot_files: true) }
 
       it "includes dot files" do
         total_files, copied_files = processor.process
-        expect(total_files).to eq(4) # Text files and dot file
+        expect(total_files).to eq(3) # Text files and dot file
         expect(copied_files).to eq(3) # Text files and dot file
 
         output_content = File.read(output_file.path, encoding: "utf-8")
@@ -99,7 +99,9 @@ RSpec.describe Poepod::FileProcessor do
     end
 
     context "with both include_binary and include_dot_files options" do
-      let(:processor) { described_class.new([File.join(temp_dir, "*")], output_file.path, nil, true, true) }
+      let(:processor) do
+        described_class.new([File.join(temp_dir, "*")], output_file.path, include_binary: true, include_dot_files: true)
+      end
 
       it "includes all files in sorted order" do
         total_files, copied_files = processor.process
