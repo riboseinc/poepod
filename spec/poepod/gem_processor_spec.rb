@@ -46,8 +46,6 @@ RSpec.describe Poepod::GemProcessor do
       expect(File.exist?(output_file)).to be true
 
       content = File.read(output_file)
-      expect(content).to include("# Wrapped Gem: test_gem")
-      expect(content).to include("## Gemspec: test_gem.gemspec")
 
       file_order = content.scan(/--- START FILE: (.+) ---/).flatten
       expected_order = [
@@ -58,20 +56,26 @@ RSpec.describe Poepod::GemProcessor do
       ]
       expect(file_order).to eq(expected_order)
 
-      expect(content).to include("# Wrapped Gem: test_gem")
-      expect(content).to include("## Gemspec: test_gem.gemspec")
-      expect(content).to include("--- START FILE: lib/test_gem.rb ---")
-      expect(content).to include("puts 'Hello from test_gem'")
-      expect(content).to include("--- END FILE: lib/test_gem.rb ---")
-      expect(content).to include("--- START FILE: spec/test_gem_spec.rb ---")
-      expect(content).to include("RSpec.describe TestGem do")
-      expect(content).to include("--- END FILE: spec/test_gem_spec.rb ---")
-      expect(content).to include("--- START FILE: README.md ---")
-      expect(content).to include("# Test Gem\n\nThis is a test gem.")
-      expect(content).to include("--- END FILE: README.md ---")
-      expect(content).to include("--- START FILE: README.txt ---")
-      expect(content).to include("Test Gem\n\nThis is a test gem in plain text.")
-      expect(content).to include("--- END FILE: README.txt ---")
+      expected = <<~HERE
+        --- START FILE: README.md ---
+        # Test Gem
+
+        This is a test gem.
+        --- END FILE: README.md ---
+        --- START FILE: README.txt ---
+        Test Gem
+
+        This is a test gem in plain text.
+        --- END FILE: README.txt ---
+        --- START FILE: lib/test_gem.rb ---
+        puts 'Hello from test_gem'
+        --- END FILE: lib/test_gem.rb ---
+        --- START FILE: spec/test_gem_spec.rb ---
+        RSpec.describe TestGem do
+        end
+        --- END FILE: spec/test_gem_spec.rb ---
+      HERE
+      expect(content).to eq(expected)
     end
 
     context "with non-existent gemspec" do
@@ -85,29 +89,21 @@ RSpec.describe Poepod::GemProcessor do
     end
 
     context "with unstaged files" do
-      let(:processor) { described_class.new(gemspec_file, nil, include_unstaged: true) }
+      let(:processor) { described_class.new(gemspec_file, include_unstaged: false) }
       let(:mock_git) { instance_double(Git::Base) }
       let(:mock_status) { instance_double(Git::Status) }
 
       before do
         allow(Git).to receive(:open).and_return(mock_git)
         allow(mock_git).to receive(:status).and_return(mock_status)
-        allow(mock_status).to receive(:untracked).and_return({ "lib/unstaged_file.rb" => "??" })
+        allow(mock_status).to receive(:untracked).and_return(
+          { "lib/unstaged_file.rb" => "??" }
+        )
         allow(mock_status).to receive(:changed).and_return({})
       end
 
-      it "warns about unstaged files" do
-        success, output_file, unstaged_files = processor.process
-        expect(success).to be true
-        expect(unstaged_files).to eq(["lib/unstaged_file.rb"])
-
-        content = File.read(output_file)
-        expect(content).to include("## Warning: Unstaged Files")
-        expect(content).to include("lib/unstaged_file.rb")
-      end
-
       context "with include_unstaged option" do
-        let(:processor) { described_class.new(gemspec_file, nil, include_unstaged: true) }
+        let(:processor) { described_class.new(gemspec_file, include_unstaged: true) }
 
         it "includes unstaged files" do
           allow(File).to receive(:file?).and_return(true)
@@ -128,17 +124,13 @@ RSpec.describe Poepod::GemProcessor do
               file_contents[file_name]
             elsif path.end_with?("_wrapped.txt")
               # This is the output file, so we'll construct its content here
-              wrapped_content = "# Wrapped Gem: test_gem\n"
-              wrapped_content += "## Gemspec: test_gem.gemspec\n\n"
-              wrapped_content += "## Warning: Unstaged Files\n"
-              wrapped_content += "lib/unstaged_file.rb\n\n"
-              wrapped_content += "## Files:\n\n"
-              file_contents.each do |file, content|
-                wrapped_content += "--- START FILE: #{file} ---\n"
-                wrapped_content += "#{content}\n"
-                wrapped_content += "--- END FILE: #{file} ---\n\n"
-              end
-              wrapped_content
+              file_contents.map do |file, content|
+                <<~HERE
+                  --- START FILE: #{file} ---
+                  #{content}
+                  --- END FILE: #{file} ---
+                HERE
+              end.join("")
             else
               "Default content for #{path}"
             end
@@ -149,21 +141,29 @@ RSpec.describe Poepod::GemProcessor do
           expect(unstaged_files).to eq(["lib/unstaged_file.rb"])
 
           content = File.read(output_file)
-          expect(content).to include("--- START FILE: lib/test_gem.rb ---")
-          expect(content).to include("puts 'Hello from test_gem'")
-          expect(content).to include("--- END FILE: lib/test_gem.rb ---")
-          expect(content).to include("--- START FILE: spec/test_gem_spec.rb ---")
-          expect(content).to include("RSpec.describe TestGem do")
-          expect(content).to include("--- END FILE: spec/test_gem_spec.rb ---")
-          expect(content).to include("--- START FILE: README.md ---")
-          expect(content).to include("# Test Gem\n\nThis is a test gem.")
-          expect(content).to include("--- END FILE: README.md ---")
-          expect(content).to include("--- START FILE: README.txt ---")
-          expect(content).to include("Test Gem\n\nThis is a test gem in plain text.")
-          expect(content).to include("--- END FILE: README.txt ---")
-          expect(content).to include("--- START FILE: lib/unstaged_file.rb ---")
-          expect(content).to include("Unstaged content")
-          expect(content).to include("--- END FILE: lib/unstaged_file.rb ---")
+          expected = <<~HERE
+            --- START FILE: lib/test_gem.rb ---
+            puts 'Hello from test_gem'
+            --- END FILE: lib/test_gem.rb ---
+            --- START FILE: spec/test_gem_spec.rb ---
+            RSpec.describe TestGem do
+            end
+            --- END FILE: spec/test_gem_spec.rb ---
+            --- START FILE: README.md ---
+            # Test Gem
+
+            This is a test gem.
+            --- END FILE: README.md ---
+            --- START FILE: README.txt ---
+            Test Gem
+
+            This is a test gem in plain text.
+            --- END FILE: README.txt ---
+            --- START FILE: lib/unstaged_file.rb ---
+            Unstaged content
+            --- END FILE: lib/unstaged_file.rb ---
+          HERE
+          expect(content).to eq(expected)
         end
       end
     end

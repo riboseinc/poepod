@@ -41,7 +41,7 @@ RSpec.describe Poepod::Cli do
       expect(File.exist?(output_file)).to be true
       content = File.read(output_file)
       expect(content).to include("Hello, World!")
-      expect(content).to include("Content-Type: application/octet-stream")
+      expect(content).to include("Content-Type: image/jpeg")
     end
 
     it "includes dot files when specified" do
@@ -53,6 +53,19 @@ RSpec.describe Poepod::Cli do
       content = File.read(output_file)
       expect(content).to include("Hello, World!")
       expect(content).to include("Hidden content")
+    end
+
+    it "uses the specified base directory for relative paths" do
+      output_file = File.join(temp_dir, "output.txt")
+      base_dir = File.dirname(text_file)
+      expect do
+        cli.invoke(:concat, [File.join(temp_dir, "*")], { output_file: output_file, base_dir: base_dir })
+      end.to output(/1 files detected\.\n.*1 files have been concatenated/).to_stdout
+      expect(File.exist?(output_file)).to be true
+      content = File.read(output_file)
+      expect(content).to include("--- START FILE: text_file.txt ---")
+      expect(content).to include("Hello, World!")
+      expect(content).to include("--- END FILE: text_file.txt ---")
     end
   end
 
@@ -86,8 +99,6 @@ RSpec.describe Poepod::Cli do
       output_file = File.join(Dir.pwd, "test_gem_wrapped.txt")
       expect(File.exist?(output_file)).to be true
       content = File.read(output_file)
-      expect(content).to include("# Wrapped Gem: test_gem")
-      expect(content).to include("## Gemspec: test_gem.gemspec")
       expect(content).to include("--- START FILE: lib/test_gem.rb ---")
       expect(content).to include("puts 'Hello from test_gem'")
       expect(content).to include("--- END FILE: lib/test_gem.rb ---")
@@ -97,6 +108,19 @@ RSpec.describe Poepod::Cli do
       expect do
         cli.wrap("non_existent.gemspec")
       end.to output(/Error: The specified gemspec file/).to_stdout.and raise_error(SystemExit)
+    end
+
+    it "uses the specified base directory for relative paths" do
+      base_dir = File.dirname(gemspec_file)
+      expect do
+        cli.invoke(:wrap, [gemspec_file], { base_dir: base_dir })
+      end.to output(/The gem has been wrapped into/).to_stdout
+      output_file = File.join(Dir.pwd, "test_gem_wrapped.txt")
+      expect(File.exist?(output_file)).to be true
+      content = File.read(output_file)
+      expect(content).to include("--- START FILE: lib/test_gem.rb ---")
+      expect(content).to include("puts 'Hello from test_gem'")
+      expect(content).to include("--- END FILE: lib/test_gem.rb ---")
     end
   end
 end
