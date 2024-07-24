@@ -1,6 +1,6 @@
+# lib/poepod/cli.rb
 # frozen_string_literal: true
 
-# lib/poepod/cli.rb
 require "thor"
 require_relative "file_processor"
 require_relative "gem_processor"
@@ -10,7 +10,7 @@ module Poepod
   class Cli < Thor
     # Define shared options
     def self.shared_options
-      option :exclude, type: :array, default: Poepod::FileProcessor::EXCLUDE_DEFAULT,
+      option :exclude, type: :array, default: nil,
                        desc: "List of patterns to exclude"
       option :config, type: :string, desc: "Path to configuration file"
       option :include_binary, type: :boolean, default: false, desc: "Include binary files (encoded in MIME format)"
@@ -36,6 +36,7 @@ module Poepod
 
     def wrap(gemspec_path)
       base_dir = options[:base_dir] || File.dirname(gemspec_path)
+      output_file = options[:output_file] || File.join(base_dir, "#{File.basename(gemspec_path, ".*")}_wrapped.txt")
       processor = Poepod::GemProcessor.new(
         gemspec_path,
         include_unstaged: options[:include_unstaged],
@@ -43,9 +44,9 @@ module Poepod
         include_binary: options[:include_binary],
         include_dot_files: options[:include_dot_files],
         base_dir: base_dir,
-        config_file: options[:config]
+        config_file: options[:config],
       )
-      success, result, unstaged_files = processor.process
+      success, result, unstaged_files = processor.process(output_file)
       if success
         handle_wrap_result(success, result, unstaged_files)
       else
@@ -80,9 +81,9 @@ module Poepod
         include_binary: options[:include_binary],
         include_dot_files: options[:include_dot_files],
         exclude: options[:exclude],
-        base_dir: base_dir
+        base_dir: base_dir,
       )
-      total_files, copied_files = processor.process
+      total_files, copied_files = processor.process(output_path.to_s)
       print_result(total_files, copied_files, output_path)
     end
 
@@ -114,8 +115,7 @@ module Poepod
         if File.directory?(first_item)
           "#{File.basename(first_item)}.txt"
         else
-          "#{File.basename(first_item,
-                           ".*")}_concat.txt"
+          "#{File.basename(first_item, ".*")}_concat.txt"
         end
       else
         "concatenated_output.txt"

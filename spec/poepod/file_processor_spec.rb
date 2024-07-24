@@ -27,10 +27,10 @@ RSpec.describe Poepod::FileProcessor do
 
   describe "#process" do
     context "with default options" do
-      let(:processor) { described_class.new([File.join(temp_dir, "*")], output_file.path) }
+      let(:processor) { described_class.new([text_file1, text_file2], output_file.path) }
 
       it "processes text files and excludes binary and dot files" do
-        total_files, copied_files = processor.process
+        total_files, copied_files = processor.process(output_file.path)
         expect(total_files).to eq(2)
         expect(copied_files).to eq(2)
 
@@ -51,7 +51,7 @@ RSpec.describe Poepod::FileProcessor do
       let(:processor) { described_class.new([File.join(temp_dir, "*")], output_file.path, include_binary: true) }
 
       it "includes binary files" do
-        total_files, copied_files = processor.process
+        total_files, copied_files = processor.process(output_file.path)
         expect(total_files).to eq(3)
         expect(copied_files).to eq(3)
 
@@ -78,7 +78,7 @@ RSpec.describe Poepod::FileProcessor do
       let(:processor) { described_class.new([File.join(temp_dir, "*")], output_file.path, include_dot_files: true) }
 
       it "includes dot files" do
-        total_files, copied_files = processor.process
+        total_files, copied_files = processor.process(output_file.path)
         expect(total_files).to eq(3)
         expect(copied_files).to eq(3)
 
@@ -104,7 +104,7 @@ RSpec.describe Poepod::FileProcessor do
       end
 
       it "includes all files in sorted order" do
-        total_files, copied_files = processor.process
+        total_files, copied_files = processor.process(output_file.path)
         expect(total_files).to eq(4)
         expect(copied_files).to eq(4)
 
