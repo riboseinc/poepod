@@ -1,3 +1,4 @@
+# lib/poepod/file_processor.rb
 # frozen_string_literal: true
 
 require_relative "processor"
@@ -5,17 +6,13 @@ require_relative "processor"
 module Poepod
   # Processes files for concatenation, handling binary and dot files
   class FileProcessor < Processor
-    EXCLUDE_DEFAULT = [
-      %r{node_modules/}, %r{.git/}, /.gitignore$/, /.DS_Store$/, /^\..+/
-    ].freeze
-
     def initialize(
-      files,
+      patterns,
       output_file,
       config_file: nil,
       include_binary: false,
       include_dot_files: false,
-      exclude: [],
+      exclude: nil,
       base_dir: nil
     )
       super(
@@ -25,20 +22,15 @@ module Poepod
         exclude: exclude,
         base_dir: base_dir,
       )
-      @files = files
+      @patterns = patterns
       @output_file = output_file
     end
 
     private
 
     def collect_files_to_process
-      @files.flatten.each_with_object([]) do |file, files_to_process|
-        Dir.glob(file, File::FNM_DOTMATCH).each do |matched_file|
-          next unless File.file?(matched_file)
-          next if should_exclude?(matched_file)
-
-          files_to_process << matched_file
-        end
+      @patterns.flatten.each_with_object([]) do |pattern, files_to_process|
+        files_to_process.concat(collect_files_from_pattern(pattern))
       end
     end
   end

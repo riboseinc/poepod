@@ -25,7 +25,7 @@ RSpec.describe Poepod::Cli do
     it "concatenates text files and excludes binary and dot files by default" do
       output_file = File.join(temp_dir, "output.txt")
       expect do
-        cli.invoke(:concat, [File.join(temp_dir, "*")], { output_file: output_file })
+        cli.invoke(:concat, [text_file], { output_file: output_file })
       end.to output(/1 files detected\.\n.*1 files have been concatenated/).to_stdout
       expect(File.exist?(output_file)).to be true
       content = File.read(output_file)
@@ -36,7 +36,7 @@ RSpec.describe Poepod::Cli do
     it "includes binary files when specified" do
       output_file = File.join(temp_dir, "output.txt")
       expect do
-        cli.invoke(:concat, [File.join(temp_dir, "*")], { output_file: output_file, include_binary: true })
+        cli.invoke(:concat, [text_file, binary_file], { output_file: output_file, include_binary: true })
       end.to output(/2 files detected\.\n.*2 files have been concatenated/).to_stdout
       expect(File.exist?(output_file)).to be true
       content = File.read(output_file)
@@ -47,7 +47,7 @@ RSpec.describe Poepod::Cli do
     it "includes dot files when specified" do
       output_file = File.join(temp_dir, "output.txt")
       expect do
-        cli.invoke(:concat, [File.join(temp_dir, "*")], { output_file: output_file, include_dot_files: true })
+        cli.invoke(:concat, [text_file, dot_file], { output_file: output_file, include_dot_files: true })
       end.to output(/2 files detected\.\n.*2 files have been concatenated/).to_stdout
       expect(File.exist?(output_file)).to be true
       content = File.read(output_file)
@@ -57,9 +57,8 @@ RSpec.describe Poepod::Cli do
 
     it "uses the specified base directory for relative paths" do
       output_file = File.join(temp_dir, "output.txt")
-      base_dir = File.dirname(text_file)
       expect do
-        cli.invoke(:concat, [File.join(temp_dir, "*")], { output_file: output_file, base_dir: base_dir })
+        cli.invoke(:concat, [text_file], { output_file: output_file, base_dir: temp_dir })
       end.to output(/1 files detected\.\n.*1 files have been concatenated/).to_stdout
       expect(File.exist?(output_file)).to be true
       content = File.read(output_file)
@@ -95,8 +94,8 @@ RSpec.describe Poepod::Cli do
     end
 
     it "wraps a gem" do
+      output_file = File.join(temp_dir, "test_gem_wrapped.txt")
       expect { cli.wrap(gemspec_file) }.to output(/The gem has been wrapped into/).to_stdout
-      output_file = File.join(Dir.pwd, "test_gem_wrapped.txt")
       expect(File.exist?(output_file)).to be true
       content = File.read(output_file)
       expect(content).to include("--- START FILE: lib/test_gem.rb ---")
@@ -112,10 +111,10 @@ RSpec.describe Poepod::Cli do
 
     it "uses the specified base directory for relative paths" do
       base_dir = File.dirname(gemspec_file)
+      output_file = File.join(base_dir, "test_gem_wrapped.txt")
       expect do
-        cli.invoke(:wrap, [gemspec_file], { base_dir: base_dir })
+        cli.invoke(:wrap, [gemspec_file], { base_dir: base_dir, output_file: output_file })
       end.to output(/The gem has been wrapped into/).to_stdout
-      output_file = File.join(Dir.pwd, "test_gem_wrapped.txt")
       expect(File.exist?(output_file)).to be true
       content = File.read(output_file)
       expect(content).to include("--- START FILE: lib/test_gem.rb ---")

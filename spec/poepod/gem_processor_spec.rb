@@ -34,6 +34,7 @@ RSpec.describe Poepod::GemProcessor do
 
   describe "#process" do
     let(:processor) { described_class.new(gemspec_file) }
+    let(:output_file) { File.join(temp_dir, "test_gem_wrapped.txt") }
 
     before do
       # Mock Git operations
@@ -41,7 +42,7 @@ RSpec.describe Poepod::GemProcessor do
     end
 
     it "processes the gem files, includes README files, and spec files in sorted order" do
-      success, output_file = processor.process
+      success, result, _ = processor.process(output_file)
       expect(success).to be true
       expect(File.exist?(output_file)).to be true
 
@@ -52,7 +53,7 @@ RSpec.describe Poepod::GemProcessor do
         "README.md",
         "README.txt",
         "lib/test_gem.rb",
-        "spec/test_gem_spec.rb"
+        "spec/test_gem_spec.rb",
       ]
       expect(file_order).to eq(expected_order)
 
@@ -82,7 +83,7 @@ RSpec.describe Poepod::GemProcessor do
       let(:processor) { described_class.new("non_existent.gemspec") }
 
       it "returns an error" do
-        success, error_message = processor.process
+        success, error_message, _ = processor.process(output_file)
         expect(success).to be false
         expect(error_message).to include("Error: The specified gemspec file")
       end
@@ -104,6 +105,7 @@ RSpec.describe Poepod::GemProcessor do
 
       context "with include_unstaged option" do
         let(:processor) { described_class.new(gemspec_file, include_unstaged: true) }
+        let(:output_file) { File.join(temp_dir, "test_gem_wrapped.txt") }
 
         it "includes unstaged files" do
           allow(File).to receive(:file?).and_return(true)
@@ -114,7 +116,7 @@ RSpec.describe Poepod::GemProcessor do
             "spec/test_gem_spec.rb" => "RSpec.describe TestGem do\nend",
             "README.md" => "# Test Gem\n\nThis is a test gem.",
             "README.txt" => "Test Gem\n\nThis is a test gem in plain text.",
-            "lib/unstaged_file.rb" => "Unstaged content"
+            "lib/unstaged_file.rb" => "Unstaged content",
           }
 
           # Mock File.read
@@ -136,7 +138,7 @@ RSpec.describe Poepod::GemProcessor do
             end
           end
 
-          success, output_file, unstaged_files = processor.process
+          success, result, unstaged_files = processor.process(output_file)
           expect(success).to be true
           expect(unstaged_files).to eq(["lib/unstaged_file.rb"])
 

@@ -1,3 +1,4 @@
+# lib/poepod/processor.rb
 # frozen_string_literal: true
 
 require "yaml"
@@ -8,31 +9,63 @@ require "stringio"
 module Poepod
   # Base processor class
   class Processor
+    EXCLUDE_DEFAULT = [
+      %r{node_modules/}, %r{.git/}, /.gitignore$/, /.DS_Store$/,
+    ].freeze
+
     def initialize(
       config_file = nil,
       include_binary: false,
       include_dot_files: false,
-      exclude: [],
+      exclude: nil,
       base_dir: nil
     )
       @config = load_config(config_file)
       @include_binary = include_binary
       @include_dot_files = include_dot_files
-      @exclude = exclude || []
+      @exclude = exclude || EXCLUDE_DEFAULT
       @base_dir = base_dir
       @failed_files = []
     end
 
-    def process
+    def process(output_file)
       files_to_process = collect_files_to_process
-      total_files, copied_files = process_files(files_to_process)
+      total_files, copied_files = process_files(files_to_process, output_file)
       [total_files, copied_files]
     end
 
     private
 
+    def process_files(files, output_file)
+      total_files = files.size
+      copied_files = 0
+
+      File.open(output_file, "w", encoding: "utf-8") do |output|
+        files.sort.each do |file_path|
+          process_file(output, file_path)
+          copied_files += 1
+        end
+      end
+
+      [total_files, copied_files]
+    end
+
     def collect_files_to_process
       raise NotImplementedError, "Subclasses must implement collect_files_to_process"
+    end
+
+    def collect_files_from_pattern(pattern)
+      expanded_pattern = File.expand_path(pattern)
+      if File.directory?(expanded_pattern)
+        expanded_pattern = File.join(expanded_pattern, "**", "*")
+      end
+
+      Dir.glob(expanded_pattern, File::FNM_DOTMATCH).each_with_object([]) do |file_path, acc|
+        next unless File.file?(file_path)
+        next if should_exclude?(file_path)
+
+        acc << file_path
+      end
     end
 
     def load_config(config_file)
@@ -46,33 +79,26 @@ module Poepod
 
       File.open(file_path, "rb") do |file|
         content = file.read(8192) # Read first 8KB for magic byte detection
-        mime_type = Marcel::MimeType.for(content, name: File.basename(file_path), declared_type: "text/plain")
+        mime_type = Marcel::MimeType.for(
+          content,
+          name: File.basename(file_path),
+          declared_type: "text/plain",
+        )
+
         !mime_type.start_with?("text/") && mime_type != "application/json"
       end
-    end
-
-    def process_files(files)
-      total_files = files.size
-      copied_files = 0
-
-      File.open(@output_file, "w", encoding: "utf-8") do |output|
-        files.sort.each do |file_path|
-          process_file(output, file_path)
-          copied_files += 1
-        end
-      end
-
-      [total_files, copied_files]
     end
 
     def process_file(output = nil, file_path)
       output ||= StringIO.new
 
       relative_path = if @base_dir
-                        Pathname.new(file_path).relative_path_from(Pathname.new(@base_dir)).to_s
-                      else
-                        file_path
-                      end
+          Pathname.new(file_path).relative_path_from(@base_dir).to_s
+        else
+          file_path
+        end
+
+      puts "Adding to bundle: #{relative_path}"
 
       output.puts "--- START FILE: #{relative_path} ---"
 
