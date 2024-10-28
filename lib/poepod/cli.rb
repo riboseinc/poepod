@@ -44,7 +44,7 @@ module Poepod
         include_binary: options[:include_binary],
         include_dot_files: options[:include_dot_files],
         base_dir: base_dir,
-        config_file: options[:config],
+        config_file: options[:config]
       )
       success, result, unstaged_files = processor.process(output_file)
       if success
@@ -81,7 +81,7 @@ module Poepod
         include_binary: options[:include_binary],
         include_dot_files: options[:include_dot_files],
         exclude: options[:exclude],
-        base_dir: base_dir,
+        base_dir: base_dir
       )
       total_files, copied_files = processor.process(output_path.to_s)
       print_result(total_files, copied_files, output_path)

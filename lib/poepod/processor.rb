@@ -10,7 +10,7 @@ module Poepod
   # Base processor class
   class Processor
     EXCLUDE_DEFAULT = [
-      %r{node_modules/}, %r{.git/}, /.gitignore$/, /.DS_Store$/,
+      %r{node_modules/}, %r{.git/}, /.gitignore$/, /.DS_Store$/
     ].freeze
 
     def initialize(
@@ -56,9 +56,7 @@ module Poepod
 
     def collect_files_from_pattern(pattern)
       expanded_pattern = File.expand_path(pattern)
-      if File.directory?(expanded_pattern)
-        expanded_pattern = File.join(expanded_pattern, "**", "*")
-      end
+      expanded_pattern = File.join(expanded_pattern, "**", "*") if File.directory?(expanded_pattern)
 
       Dir.glob(expanded_pattern, File::FNM_DOTMATCH).each_with_object([]) do |file_path, acc|
         next unless File.file?(file_path)
@@ -82,7 +80,7 @@ module Poepod
         mime_type = Marcel::MimeType.for(
           content,
           name: File.basename(file_path),
-          declared_type: "text/plain",
+          declared_type: "text/plain"
         )
 
         !mime_type.start_with?("text/") && mime_type != "application/json"
@@ -93,10 +91,10 @@ module Poepod
       output ||= StringIO.new
 
       relative_path = if @base_dir
-          Pathname.new(file_path).relative_path_from(@base_dir).to_s
-        else
-          file_path
-        end
+                        Pathname.new(file_path).relative_path_from(@base_dir).to_s
+                      else
+                        file_path
+                      end
 
       puts "Adding to bundle: #{relative_path}"
 
