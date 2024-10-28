@@ -3,6 +3,7 @@
 require_relative "processor"
 require "rubygems/specification"
 require "git"
+require "pathname"
 
 module Poepod
   # Processes gem files for wrapping, handling unstaged files
@@ -35,7 +36,7 @@ module Poepod
 
       unstaged_files = check_unstaged_files
 
-      total_files, copied_files = super(output_file)
+      super(output_file)
 
       [true, output_file, unstaged_files]
     end
@@ -46,11 +47,26 @@ module Poepod
       files_to_include = find_gemspec_files
       files_to_include += check_unstaged_files if @include_unstaged
 
-      files_to_include.sort.uniq.reject do |relative_path|
-        should_exclude?(File.join(@base_dir, relative_path))
-      end.map do |relative_path|
-        File.join(@base_dir, relative_path)
+      files_to_collect = []
+
+      files_to_include.sort.uniq.each do |relative_path|
+        full_path = File.join(@base_dir, relative_path)
+
+        next if should_exclude?(full_path)
+
+        if File.directory?(full_path)
+          # Recursively collect all files under the directory
+          files = collect_files_from_pattern(full_path)
+          files_to_collect.concat(files)
+        elsif File.file?(full_path)
+          files_to_collect << full_path
+        else
+          # Skip if neither file nor directory
+          next
+        end
       end
+
+      files_to_collect
     end
 
     def find_gemspec_files

@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-# spec/poepod/gem_processor_spec.rb
 require "spec_helper"
 require "poepod/gem_processor"
 require "tempfile"
@@ -42,7 +41,7 @@ RSpec.describe Poepod::GemProcessor do
     end
 
     it "processes the gem files, includes README files, and spec files in sorted order" do
-      success, result, _ = processor.process(output_file)
+      success, = processor.process(output_file)
       expect(success).to be true
       expect(File.exist?(output_file)).to be true
 
@@ -53,7 +52,7 @@ RSpec.describe Poepod::GemProcessor do
         "README.md",
         "README.txt",
         "lib/test_gem.rb",
-        "spec/test_gem_spec.rb",
+        "spec/test_gem_spec.rb"
       ]
       expect(file_order).to eq(expected_order)
 
@@ -83,7 +82,7 @@ RSpec.describe Poepod::GemProcessor do
       let(:processor) { described_class.new("non_existent.gemspec") }
 
       it "returns an error" do
-        success, error_message, _ = processor.process(output_file)
+        success, error_message, = processor.process(output_file)
         expect(success).to be false
         expect(error_message).to include("Error: The specified gemspec file")
       end
@@ -116,7 +115,7 @@ RSpec.describe Poepod::GemProcessor do
             "spec/test_gem_spec.rb" => "RSpec.describe TestGem do\nend",
             "README.md" => "# Test Gem\n\nThis is a test gem.",
             "README.txt" => "Test Gem\n\nThis is a test gem in plain text.",
-            "lib/unstaged_file.rb" => "Unstaged content",
+            "lib/unstaged_file.rb" => "Unstaged content"
           }
 
           # Mock File.read
@@ -138,7 +137,7 @@ RSpec.describe Poepod::GemProcessor do
             end
           end
 
-          success, result, unstaged_files = processor.process(output_file)
+          success, _, unstaged_files = processor.process(output_file)
           expect(success).to be true
           expect(unstaged_files).to eq(["lib/unstaged_file.rb"])
 
@@ -166,6 +165,36 @@ RSpec.describe Poepod::GemProcessor do
             --- END FILE: lib/unstaged_file.rb ---
           HERE
           expect(content).to eq(expected)
+        end
+      end
+
+      context "when gem includes directories in spec.files (e.g., git submodules)" do
+        let(:submodule_dir) { File.join(temp_dir, "vendor", "submodule_project") }
+        before do
+          # Simulate a submodule directory with a file
+          FileUtils.mkdir_p(submodule_dir)
+          File.write(File.join(submodule_dir, "submodule_file.rb"), "puts 'Hello from submodule'")
+
+          # Update gemspec to include the submodule directory
+          File.write(gemspec_file, <<~GEMSPEC)
+            Gem::Specification.new do |spec|
+              spec.name = "test_gem"
+              spec.version = "0.1.0"
+              spec.authors = ["Test Author"]
+              spec.files = ["lib/test_gem.rb", "vendor/submodule_project"]
+              spec.test_files = ["spec/test_gem_spec.rb"]
+            end
+          GEMSPEC
+        end
+
+        it "includes files from directories listed in spec.files" do
+          success, = processor.process(output_file)
+          expect(success).to be true
+          expect(File.exist?(output_file)).to be true
+
+          content = File.read(output_file)
+          expect(content).to include("--- START FILE: vendor/submodule_project/submodule_file.rb ---")
+          expect(content).to include("puts 'Hello from submodule'")
         end
       end
     end

@@ -147,4 +147,38 @@ RSpec.describe Poepod::FileProcessor do
       end.to raise_error(Encoding::InvalidByteSequenceError)
     end
   end
+
+  context "when directories are included in the file patterns (e.g., git submodules)" do
+    let(:submodule_dir) { File.join(temp_dir, "vendor", "submodule_project") }
+    let(:submodule_file) { File.join(submodule_dir, "submodule_file.rb") }
+
+    before do
+      # Simulate a submodule directory with a file
+      FileUtils.mkdir_p(submodule_dir)
+      File.write(submodule_file, "puts 'Hello from submodule'")
+
+      # Include the submodule directory in the patterns
+      @processor = described_class.new(
+        [text_file1, text_file2, submodule_dir],
+        output_file.path,
+        include_binary: false,
+        include_dot_files: false,
+        exclude: nil,
+        base_dir: temp_dir
+      )
+    end
+
+    it "includes files from directories specified in the patterns" do
+      total_files, copied_files = @processor.process(output_file.path)
+      expect(total_files).to eq(3) # text_file1, text_file2, submodule_file
+      expect(copied_files).to eq(3)
+
+      output_content = File.read(output_file.path, encoding: "utf-8")
+      expect(output_content).to include("Content of file1.\n")
+      expect(output_content).to include("Content of file2.\n")
+      expect(output_content).to include("puts 'Hello from submodule'")
+
+      expect(output_content).to include("--- START FILE: vendor/submodule_project/submodule_file.rb ---")
+    end
+  end
 end
